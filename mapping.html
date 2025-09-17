@@ -3,6 +3,10 @@
 <head>
   <meta charset="utf-8">
   <title>Custom YouTube Playlist Player</title>
+  
+    <script>console.log("Script loaded...");
+  </script>
+  
   <style>
     body {
       font-family: Arial, sans-serif;
@@ -127,7 +131,7 @@
   </style>
 </head>
 <body>
-  <h2 id="heading">🎬 Mapping by Ajeet Sir Playlist</h2>
+  <h2 id="heading">🎬 Mapping by Ajert Sir Playlist</h2>
 
   <div class="container">
     <!-- Video Player -->
@@ -162,9 +166,9 @@
 
     // 🔹 Playlist Data
     const videos = [
-      { id: "{ id: "qI0lkWulG2g", title: "Video 1" },
-{ id: "-zFfKXvu89w", title: "Video 2" },
-{ id: "gELkbBpmUP", title: "Video 3" },
+      { id: "qI0lkWulG2g", title: "Video 1" },
+      { id: "-zFfKXvu89w", title: "Video 2" },
+{ id: "gELkbBpmUPI", title: "Video 3" },
 { id: "vZo5oVKtw_U", title: "Video 4" },
 { id: "AKTbYNAqRtc", title: "Video 5" },
 { id: "bOgUWCIa1Lk", title: "Video 6" },
@@ -176,6 +180,11 @@
 { id: "eFXJCmlrUR8", title: "Video 12" },
 { id: "5SACT8lje7o", title: "Video 13" }
     ];
+    
+    console.log("Reached here - step 1");
+
+    
+    
 
     function onYouTubeIframeAPIReady() {
       player = new YT.Player('player', {
