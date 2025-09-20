@@ -1,0 +1,394 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Custom YouTube Playlist Player</title>
+  
+    <script>console.log("Script loaded...");
+  </script>
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #F4F1DE;
+      color: #fff;
+      margin: 0;
+      padding: 0;
+      text-align: center;
+      
+    }
+    
+    #heading{
+      background: red;
+    }
+    
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 20px;
+      justify-content: center;
+      padding: 10px 20px 20px 20px;
+    }
+
+    /* Video Player */
+    .video-container {
+      position: relative;
+      flex: 1 1 600px;
+      max-width: 800px;
+      aspect-ratio: 16 / 9;
+      background: #676FCD;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    #player {
+      width: 100%;
+      height: 100%;
+    }
+
+    .click-block {
+      position: absolute;
+      inset: 0;
+      background: transparent;
+      z-index: 5;
+    }
+
+    .controls {
+      position: absolute;
+      bottom: 5px;
+      left: 0;
+      right: 0;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      align-items: center;
+      gap: 6px;
+      z-index: 10;
+      background: rgba(0,0,0,0.6);
+      padding: 8px;
+      border-radius: 8px;
+    }
+
+    .controls button, .controls select {
+      padding: 4px 8px;
+      border: none;
+      border-radius: 4px;
+      background: transparent;
+      color: #fff;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .controls button:hover, .controls select:hover {
+      background: #676FCD;
+    }
+
+    /* Seekbar full width */
+    #seekBar {
+      flex: 1;
+      height: 6px;
+      cursor: pointer;
+    }
+
+    /* Playlist */
+    .playlist {
+      flex: 1 1 250px;
+      max-width: 300px;
+      background: #676FCD;
+      border-radius: 10px;
+      padding: 10px;
+      overflow-y: auto;
+      max-height: 400px;
+      display: block; /* ✅ हमेशा दिखेगा */
+    }
+
+    .playlist h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: white;
+      background: blue;
+      border-radius: 12px;
+    }
+
+    .playlist-item {
+      padding: 8px;
+      margin-bottom: 6px;
+      background: #2D80BE;
+      border-radius: 6px;
+      cursor: pointer;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .playlist-item:hover {
+      background: #35610F;
+    }
+
+    .playlist-item.active {
+      background: blanched#131B6Balmond;
+      color: #fff;
+    }
+  </style>
+</head>
+<body>
+  <h2 id="heading">🎬 विजेता 2.0  बैच Playlist</h2>
+
+  <div class="container">
+    <!-- Video Player -->
+    <div class="video-container" id="videoContainer">
+      <div id="player"></div>
+      <div class="click-block"></div>
+
+      <div class="controls">
+        <input type="range" id="seekBar" min="0" max="100" value="0">
+        <button id="backward">⏪</button>
+        <button id="playPauseBtn">▶️</button>
+        <button id="forward">⏩</button>
+        <select id="qualityControl"></select>
+        <button id="fullscreenBtn">⛶</button>
+      </div>
+    </div>
+
+    <!-- Playlist -->
+    <div class="playlist" id="playlist">
+      <h3>📜 Playlist 95 Vedios</h3>
+    </div>
+  </div>
+
+  <!-- YouTube API -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    let player;
+    let seekBar = null;
+    let updateInterval;
+    let currentIndex = 0;
+    let isPlaying = false;
+
+    // 🔹 Playlist Data
+    const videos = [
+{ id: "t_lVzyDBRdo", title: "Video 1 Astronomy " },
+{ id: "wytP1FEFKo8", title: "Video 2 Oceanography" },
+{ id: "sOrjH_See_4", title: "Video 3 Geography " },
+{ id: "0qg1fT9AUMM", title: "Video 4 Geography" },
+{ id: "NAZmSRHMdJY", title: "Video 5 Geography" },
+{ id: "Iyacazz3cF8", title: "Video 6 Geography" },
+{ id: "6LqwjqAD0vE", title: "Video 7 Geography" },
+{ id: "2RhRWMERY6s", title: "Video 8 Geography" },
+{ id: "v2dHwA2GPWw", title: "Video 9 Geography" },
+{ id: "hj-US70P9Mo", title: "Video 10 Geography" },
+{ id: "kKSP86hqReA", title: "Video 11 Geography" },
+{ id: "T1PbRJtFTok", title: "Video 12 Geography" },
+{ id: "_BLZqOEcE-0", title: "Video 13 Geography" },
+{ id: "fhAyqgjWsDE", title: "Video 1 Economy 👋 " },
+{ id: "mADTRe9kXkM", title: "Video 2 Economy" },
+{ id: "zhFZRs5Y24Q", title: "Video 3 Economy" },
+{ id: "GP5goISCJ74", title: "Video 4 Economy" },
+{ id: "BtbDZqy88N8", title: "Video 5 Economy" },
+{ id: "0IXUx1Nj28Q", title: "Video 6 Economy" },
+{ id: "LssL5SU5Kek", title: "Video 7 Economy" },
+{ id: "BxbOCSSRJeU", title: "Video 8 Economy" },
+{ id: "jTLhyXFDv4k", title: "Video 9 Economy" },
+{ id: "k3UhsgjxsX0", title: "Video 10 Economy" },
+{ id: "C8C3Dus_hKI", title: "Video 11 Economy" },
+{ id: "YoV0iuLLaFA", title: "Video 1 Geography of Bihar" },
+{ id: "bvnKpj7anGA", title: "Video 2 Geography of Bihar" },
+{ id: "QrASNuNTKHw", title: "Video 3 Bihar Special" }, 
+{ id: "AGKFR67AAJo", title: "Video 4 History of Bihar" },
+{ id: "hmgNhKgDWj4", title: "Video 5 Bihar Special" },
+{ id: "NnlzgjuXOhA", title: "Video 6 Bihar Special" },
+{ id: "DuVrJMimtBQ", title: "Video 1 Polity" },
+{ id: "CV5_gIJFFZs", title: "Video 2 Polity" },
+{ id: "nCsFOYXwoJY", title: "Video 3 Polity" },
+{ id: "zoaMFMadgAM", title: "Video 4 Polity" },
+{ id: "VlS9NA2mptw", title: "Video 5 Polity" },
+{ id: "-GaYm7hMPJE", title: "Video 6 Polity" },
+{ id: "W_qJ7Id6ua8", title: "Video 7 Polity" },
+{ id: "qU8BS9eB4go", title: "Video 8 Polity" },
+{ id: "PWlmyNOY7ys", title: "Video 9 Polity" },
+{ id: "Eo8EAo5W2Yc", title: "Video 10 Polity" },
+{ id: "7Mz8XhtEb0Y", title: "Video 11 Polity" },
+{ id: "Ycq9DaqSM7A", title: "Video 1 Current Affairs" },
+{ id: "q6K36eAEjO4", title: "Video 2 Current Affairs" },
+{ id: "gUXvQfFxa4Y", title: "Video 3 Current Affairs" },
+{ id: "rKTF44mAOy4", title: "Video 4 Current Affairs" },
+{ id: "0T4vnsXIahs", title: "Video 5 Current Affairs" },
+{ id: "gpB_3GGtxKE", title: "Video 6 Current Affairs" },
+{ id: "EIFOMOqlHRA", title: "Video 7 Current Affairs" },
+{ id: "ZPkwz6BAv7o", title: "Video 8 Current Affairs" },
+{ id: "dZnz-xc7haA", title: "Video 9 Current Affairs" },
+{ id: "k8uRK-drELI", title: "Video 10 Current Affairs" },
+{ id: "qgTyN2VZvDU", title: "Video 11 Current Affairs" },
+{ id: "N1GmQFFmiAM", title: "Video 12 Current Affairs" },
+{ id: "a6r3FGRhWVM", title: "Video 1 Biology" }, 
+{ id: "5IqHnFonAeI", title: "Video 2 Biology" },
+{ id: "Lsy6DNrfuIw", title: "Video 3 Biology" },
+{ id: "KokikLc2R_E", title: "Video 4 Biology" },
+{ id: "__wx01gur2c", title: "Video 5 Biology" },
+{ id: "iMek_qT0IDQ", title: "Video 6 Biology" },
+{ id: "fsT0bGFgfOg", title: "Video 7 Biology" },
+{ id: "", title: "Video 8 Biology" },
+{ id: "MibQs0SbZOc", title: "Video 9 Biology" },
+{ id: "cRUKTUdOnao", title: "Video 1 Ancient history" },
+{ id: "fouZ5xmgqgo", title: "Video 2 Ancient history" },
+{ id: "HHL2K8WsBjQ", title: "Video 3 Ancient history" },
+{ id: "30XHUbYuZck", title: "Video 4 Ancient history" },
+{ id: "6zEdOufAeQY", title: "Video 5 Ancient history" },
+{ id: "NiGx8vkr8Zg", title: "Video 1 Chemistry" },
+{ id: "nfGXKkZBuJM", title: "Video 2 Chemistry" },
+{ id: "hoU4EoLORzA", title: "Video 3 Chemistry" },
+{ id: "B4RpFWwVch4", title: "Video 4 Chemistry" },
+{ id: "-4ISrO3B0OI", title: "Video 5 Chemistry" },
+{ id: "2TjkNGbCvO4", title: "Video 1 Medieval History" },
+{ id: "YTVMadnAqWE", title: "Video 2 Medieval History" },
+{ id: "RWgkyxMeiCg", title: "Video 3 Medieval History" },
+{ id: "RrvuEzRVwtg", title: "Video 1 Physics" },
+{ id: "WqItdIKyhDA", title: "Video 2 Physics" },
+{ id: "uQI8VYcxu2s", title: "Video 3 Physics" },
+{ id: "FlnNfA4jYco", title: "Video 4 Physics" },
+{ id: "EQL8xwnd3sE", title: "Video 1 Modern History" },
+{ id: "o_dk_yOdv_0", title: "Video 2 Modern History" },
+{ id: "iC1HgV0qdV0", title: "Video 3 Modern History" },
+{ id: "K6f79u4dEbE", title: "Video 4 Modern History" },
+{ id: "m5Qf_PT_h4c", title: "Video 5 Modern History" },
+{ id: "-m0Pel3T2Ho", title: "Video 6 Modern History" },
+{ id: "7t39Znzb_2M", title: "Video 7 Modern History" },
+{ id: "hg3NQxNNR38", title: "Video 13 Current Affairs" },
+{ id: "FnH9T2PJGE4", title: "Video 14 Current Affairs" },
+{ id: "-I9kA5VZhjE", title: "Video 15 Current Affairs" },
+{ id: "DaQBKvSvo7s", title: "Video 16 Current Affairs" },
+{ id: "sPZN85iv84A", title: "Video 17 Current Affairs" },
+{ id: "JroAZgPfAmk", title: "Video 18 Current Affairs" },
+{ id: "Tgrrfp7jGF8", title: "Video 19 Current Affairs" },
+{ id: "Vmy4LMF82tA", title: "Video 20 Current Affairs" },
+{ id: "CIaXDue8w4c", title: "Video 21 Current Affairs" }
+    ];
+    
+    console.log("Reached here - step 1");
+
+    
+    
+
+    function onYouTubeIframeAPIReady() {
+      player = new YT.Player('player', {
+        videoId: videos[0].id,
+        playerVars: { 
+          'controls': 0, 
+          'rel': 0, 
+          'modestbranding': 1, 
+          'disablekb': 1,
+          'iv_load_policy': 3 
+        },
+        events: { 'onReady': onPlayerReady }
+      });
+    }
+
+    function onPlayerReady() {
+      buildPlaylist();
+
+      // PlayPause toggle
+      document.getElementById('playPauseBtn').onclick = () => {
+        if (isPlaying) {
+          player.pauseVideo();
+          document.getElementById('playPauseBtn').innerText = "▶️";
+        } else {
+          player.playVideo();
+          document.getElementById('playPauseBtn').innerText = "⏸";
+        }
+        isPlaying = !isPlaying;
+      };
+
+      // Forward
+      document.getElementById('forward').onclick = () => {
+        let t = player.getCurrentTime();
+        player.seekTo(t + 10, true);
+      };
+
+      // Backward
+      document.getElementById('backward').onclick = () => {
+        let t = player.getCurrentTime();
+        player.seekTo(t - 10, true);
+      };
+
+      // Seek bar
+      seekBar = document.getElementById('seekBar');
+      seekBar.addEventListener('input', () => {
+        let percent = seekBar.value;
+        let duration = player.getDuration();
+        player.seekTo(duration * (percent / 100), true);
+      });
+
+      updateInterval = setInterval(() => {
+        if (player && player.getDuration) {
+          let duration = player.getDuration();
+          let current = player.getCurrentTime();
+          if (duration > 0) {
+            seekBar.value = (current / duration) * 100;
+          }
+        }
+      }, 1000);
+
+      // Quality Control
+      document.getElementById('qualityControl').addEventListener('change', (e) => {
+        player.setPlaybackQuality(e.target.value);
+      });
+      setTimeout(loadQualityLevels, 2000);
+
+      // Fullscreen
+      document.getElementById('fullscreenBtn').onclick = () => {
+        let container = document.getElementById("videoContainer");
+        if (container.requestFullscreen) container.requestFullscreen();
+        else if (container.mozRequestFullScreen) container.mozRequestFullScreen();
+        else if (container.webkitRequestFullscreen) container.webkitRequestFullscreen();
+        else if (container.msRequestFullscreen) container.msRequestFullscreen();
+      };
+    }
+
+    // Quality options लोड करना
+    function loadQualityLevels() {
+      let levels = player.getAvailableQualityLevels();
+      let select = document.getElementById("qualityControl");
+      select.innerHTML = "";
+
+      levels.forEach(level => {
+        let opt = document.createElement("option");
+        opt.value = level;
+        opt.text = level.toUpperCase();
+        select.appendChild(opt);
+      });
+
+      // Default auto
+      if (levels.includes("auto")) {
+        select.value = "auto";
+        player.setPlaybackQuality("360");
+      }
+    }
+
+    // Playlist बनाना
+    function buildPlaylist() {
+      const list = document.getElementById("playlist");
+      videos.forEach((video, index) => {
+        let item = document.createElement("div");
+        item.className = "playlist-item" + (index === currentIndex ? " active" : "");
+        item.innerText = video.title;
+        item.onclick = () => changeVideo(index);
+        list.appendChild(item);
+      });
+    }
+
+    // Video बदलना
+    function changeVideo(index) {
+      if (index < 0 || index >= videos.length) return;
+      currentIndex = index;
+      player.loadVideoById(videos[index].id);
+
+      // active highlight
+      document.querySelectorAll(".playlist-item").forEach((el, i) => {
+        el.classList.toggle("active", i === currentIndex);
+      });
+
+      document.getElementById('playPauseBtn').innerText = "⏸";
+      isPlaying = true;
+    }
+  </script>
+</body>
+</html>
